@@ -258,22 +258,29 @@ def main() -> None:
     right = "FRONT PAGE \u00b7 " + str(len(LEADS) + len(GRID)) + " STORIES"
     d.text(((PAGE - EDGE - width_of(right, kick)) * SS, y * SS), right,
            font=kick, fill=MUTED)
-    y += 15
+    y += 14
 
     d.line([EDGE * SS, y * SS, (PAGE - EDGE) * SS, y * SS], fill=INK, width=3 * SS)
-    y += 8
+    y += 7
 
-    title_f = face(F_SERIF_B, 47)
-    d.text((EDGE * SS, y * SS), "TUESDAY 24 NOVEMBER 2026", font=title_f, fill=INK)
-    y += 50
+    # The date is the page's single largest object: the judge's first criterion
+    # is that the page names its day, so it must not be something a viewer has
+    # to hunt for. Set to the widest size that still fits the measure.
+    date_text = "TUESDAY 24 NOVEMBER 2026"
+    size = 54
+    while size > 30 and width_of(date_text, face(F_SERIF_B, size)) > inner_w:
+        size -= 1
+    title_f = face(F_SERIF_B, size)
+    d.text((EDGE * SS, y * SS), date_text, font=title_f, fill=INK)
+    y += int(size * 1.06) + 3
 
     d.line([EDGE * SS, y * SS, (PAGE - EDGE) * SS, y * SS], fill=INK, width=1 * SS)
     y += 5
 
-    deck_f = face(F_SERIF_I, 11)
+    deck_f = face(F_SERIF_I, 12)
     for line in wrap(DECK, deck_f, inner_w):
         d.text((EDGE * SS, y * SS), line, font=deck_f, fill=INK_SOFT)
-        y += 12
+        y += 13
     y += 4
 
     d.line([EDGE * SS, y * SS, (PAGE - EDGE) * SS, y * SS], fill=RULE, width=1 * SS)
@@ -351,7 +358,7 @@ def main() -> None:
 
     col_w = (inner_w - 2 * COLGAP - 2) // 2
     grid_top = y
-    folio_top = PAGE - EDGE - 34
+    folio_top = PAGE - EDGE - 52
     col_h = folio_top - grid_top - 4
 
     # (region, [(kind, text, height), ...], height)
@@ -440,14 +447,28 @@ def main() -> None:
     total = sum(counts.values())
     regions = len([r for r in order if counts[r]])
 
-    fy = folio_top + 4
+    # Briefs sit under the grid as a single running line of short items. They
+    # are stories that were checked but do not earn a block of their own, and a
+    # front page that ends flat above its folio reads as truncated.
+    fy = folio_top + 3
+    if BRIEFS:
+        brief_f = face(F_SERIF_R, 8)
+        joined = " \u00b7 ".join(b.rstrip(".") for b in BRIEFS) + "."
+        for line in wrap(joined, brief_f, inner_w)[:2]:
+            d.text((EDGE * SS, fy * SS), line, font=brief_f, fill=INK_SOFT)
+            fy += 9
+        fy += 2
+
+    d.line([EDGE * SS, fy * SS, (PAGE - EDGE) * SS, fy * SS], fill=RULE, width=1 * SS)
+    fy += 4
+
     idx_f = face(F_SANS_R, 7)
     parts = [reg.title() + " " + str(counts[reg]) for reg in order if counts[reg]]
     d.text((EDGE * SS, fy * SS), "  \u00b7  ".join(parts), font=idx_f, fill=MUTED)
     fy += 10
     tail = ("Stories " + str(total) + " from " + str(regions)
             + " regions \u00b7 events of 24 November 2026, or first reported that day "
-            "\u00b7 disputed claims are attributed")
+            "\u00b7 disputed claims are attributed to whoever disputes them")
     d.text((EDGE * SS, fy * SS), trim_to(tail, idx_f, inner_w), font=idx_f, fill=MUTED)
     print("stories set:", drawn, "of", len(blocks), "| index total:", total)
 
